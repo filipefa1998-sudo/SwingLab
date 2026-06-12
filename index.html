@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#14181d">
+<title>SwingLab — Markerless Hitting Biomechanics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --slate:#14181d;        /* darkened film room */
+    --panel:#1b2128;
+    --panel-2:#222a32;
+    --line:rgba(236,231,221,0.10);
+    --line-strong:rgba(236,231,221,0.22);
+    --chalk:#ECE7DD;        /* chalk line */
+    --muted:#8A93A0;
+    --clay:#E07A3E;         /* infield clay — primary accent */
+    --clay-deep:#C2602B;
+    --stitch:#E23B2E;       /* ball stitch — contact / alert */
+    --grass:#6FA85A;        /* good */
+    --amber:#E8B84B;        /* warning */
+    --sky:#5BA9C8;          /* info */
+    --r:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(224,122,62,0.10), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(91,169,200,0.07), transparent 60%),
+      var(--slate);
+    color:var(--chalk);
+    font-family:'Inter',system-ui,sans-serif;
+    line-height:1.5;
+    overflow-x:hidden;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 18px 80px;}
+
+  /* ---------- header ---------- */
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:24px;}
+  .brand{display:flex;align-items:center;gap:14px;}
+  .mark{width:46px;height:46px;flex:0 0 auto;position:relative;}
+  .mark svg{width:100%;height:100%;display:block;}
+  .title h1{font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:30px;letter-spacing:.06em;
+    text-transform:uppercase;line-height:.95;}
+  .title h1 b{color:var(--clay);font-weight:800;}
+  .title .sub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);
+    letter-spacing:.18em;text-transform:uppercase;margin-top:3px;}
+  .status{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);
+    letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);box-shadow:0 0 0 0 rgba(0,0,0,0);}
+  .dot.live{background:var(--grass);animation:pulse 1.6s infinite;}
+  .dot.work{background:var(--amber);animation:pulse 1s infinite;}
+  .dot.err{background:var(--stitch);}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(111,168,90,.5);}70%{box-shadow:0 0 0 7px rgba(111,168,90,0);}100%{box-shadow:0 0 0 0 rgba(111,168,90,0);}}
+
+  /* ---------- intake ---------- */
+  .intake{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;}
+  .drop{padding:40px 26px;text-align:center;border:1.5px dashed var(--line-strong);margin:18px;border-radius:12px;
+    transition:border-color .18s, background .18s;cursor:pointer;position:relative;}
+  .drop.over{border-color:var(--clay);background:rgba(224,122,62,0.06);}
+  .drop h2{font-family:'Saira Condensed',sans-serif;font-weight:600;font-size:22px;letter-spacing:.04em;
+    text-transform:uppercase;margin-bottom:6px;}
+  .drop p{color:var(--muted);font-size:13.5px;max-width:460px;margin:0 auto 16px;}
+  .drop .plate{width:54px;height:54px;margin:0 auto 14px;opacity:.8;}
+  .btn{font-family:'Saira Condensed',sans-serif;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    font-size:14px;border:none;border-radius:9px;padding:11px 22px;cursor:pointer;transition:transform .12s, filter .15s;}
+  .btn:active{transform:translateY(1px);}
+  .btn.primary{background:var(--clay);color:#1a1208;}
+  .btn.primary:hover{filter:brightness(1.07);}
+  .btn.ghost{background:transparent;color:var(--chalk);border:1px solid var(--line-strong);}
+  .btn.ghost:hover{border-color:var(--chalk);}
+  .intake-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    padding:0 22px 20px;}
+  .tips{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);line-height:1.7;letter-spacing:.02em;}
+  .tips b{color:var(--chalk);font-weight:500;}
+  .hand-toggle{display:flex;gap:6px;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
+  .seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;}
+  .seg button{background:transparent;color:var(--muted);border:none;padding:6px 12px;font-family:'IBM Plex Mono',monospace;
+    font-size:11px;cursor:pointer;letter-spacing:.08em;}
+  .seg button.on{background:var(--panel-2);color:var(--clay);}
+
+  /* ---------- processing ---------- */
+  .proc{display:none;padding:34px 26px;}
+  .proc.show{display:block;}
+  .bar{height:8px;background:var(--panel-2);border-radius:6px;overflow:hidden;margin:16px 0 8px;}
+  .bar > i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--clay-deep),var(--clay));transition:width .15s;}
+  .proc .lbl{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);letter-spacing:.08em;display:flex;justify-content:space-between;}
+  .proc video{display:none;}
+
+  /* ---------- results ---------- */
+  .results{display:none;}
+  .results.show{display:block;}
+  .grid{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;align-items:start;}
+  @media(max-width:880px){.grid{grid-template-columns:1fr;}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;}
+  .card h3{font-family:'Saira Condensed',sans-serif;font-weight:600;font-size:14px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .card h3 .tag{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);
+    border:1px solid var(--line-strong);border-radius:5px;padding:2px 6px;letter-spacing:.06em;}
+
+  /* composite score header */
+  .scoreboard{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:18px;
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--line);border-radius:var(--r);padding:18px 22px;}
+  .composite{display:flex;align-items:baseline;gap:10px;}
+  .composite .num{font-family:'Saira Condensed',sans-serif;font-weight:900;font-size:74px;line-height:.8;letter-spacing:-.01em;}
+  .composite .den{font-family:'Saira Condensed',sans-serif;font-weight:600;font-size:22px;color:var(--muted);}
+  .composite .cap{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.16em;text-transform:uppercase;}
+  .verdict{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--chalk);letter-spacing:.05em;max-width:380px;}
+  .verdict b{color:var(--clay);}
+  .reset-link{margin-left:auto;}
+
+  /* 3D viewer */
+  .viewer{position:relative;background:radial-gradient(120% 100% at 50% 0%, #1e252d, #11151a);
+    border-radius:10px;overflow:hidden;aspect-ratio:4/3;min-height:300px;}
+  #three{position:absolute;inset:0;width:100%;height:100%;}
+  .vhud{position:absolute;top:10px;left:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);
+    letter-spacing:.06em;pointer-events:none;line-height:1.6;}
+  .vhud b{color:var(--chalk);}
+  .vhud .ct{color:var(--stitch);}
+  .vcontrols{display:flex;align-items:center;gap:12px;margin-top:12px;}
+  .play{width:40px;height:40px;border-radius:50%;border:1px solid var(--line-strong);background:var(--panel-2);
+    color:var(--chalk);cursor:pointer;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .play:hover{border-color:var(--clay);color:var(--clay);}
+  .scrub{flex:1;-webkit-appearance:none;appearance:none;height:6px;border-radius:4px;background:var(--panel-2);outline:none;}
+  .scrub::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--clay);cursor:pointer;border:2px solid var(--slate);}
+  .scrub::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--clay);cursor:pointer;border:2px solid var(--slate);}
+  .frameno{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);min-width:96px;text-align:right;}
+
+  /* kinematic sequence chart */
+  #kchart{width:100%;display:block;border-radius:8px;background:#10141a;}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .legend i{width:11px;height:3px;border-radius:2px;display:inline-block;}
+
+  /* metric rows */
+  .metrics{display:flex;flex-direction:column;gap:12px;}
+  .metric{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;
+    padding-bottom:12px;border-bottom:1px solid var(--line);}
+  .metric:last-child{border-bottom:none;padding-bottom:0;}
+  .metric .mname{font-size:13.5px;font-weight:500;}
+  .metric .mname small{display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);
+    font-weight:400;letter-spacing:.02em;margin-top:2px;text-transform:none;}
+  .metric .mval{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--chalk);text-align:right;white-space:nowrap;}
+  .metric .mval b{font-size:15px;}
+  .pill{grid-column:1/-1;height:6px;background:var(--panel-2);border-radius:4px;overflow:hidden;margin-top:2px;}
+  .pill > i{display:block;height:100%;width:0;border-radius:4px;transition:width .5s ease;}
+
+  /* drills */
+  .drill{border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:10px;background:var(--panel-2);}
+  .drill:last-child{margin-bottom:0;}
+  .drill .dh{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+  .drill .dh .badge{font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.08em;
+    padding:2px 7px;border-radius:5px;background:rgba(226,59,46,.15);color:var(--stitch);}
+  .drill .dh .badge.ok{background:rgba(111,168,90,.15);color:var(--grass);}
+  .drill .dh h4{font-family:'Saira Condensed',sans-serif;font-weight:600;font-size:17px;letter-spacing:.02em;}
+  .drill p{font-size:13px;color:#cfd4da;}
+  .drill p + p{margin-top:5px;color:var(--muted);font-size:12.5px;}
+  .ai-row{display:flex;gap:10px;align-items:center;margin-top:6px;flex-wrap:wrap;}
+  .ai-note{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);letter-spacing:.03em;}
+
+  .empty{padding:30px;text-align:center;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;}
+  .empty b{color:var(--chalk);}
+
+  .foot{margin-top:30px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);
+    letter-spacing:.04em;line-height:1.8;border-top:1px solid var(--line);padding-top:16px;}
+  .foot b{color:var(--chalk);}
+  .stack > * + *{margin-top:18px;}
+  .err-box{display:none;background:rgba(226,59,46,.08);border:1px solid rgba(226,59,46,.3);border-radius:10px;
+    padding:16px;margin-top:16px;font-size:13px;color:#f0c9c4;}
+  .syncbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:14px;}
+  .syncbar .roster{display:flex;align-items:center;gap:8px;}
+  .syncbar label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;}
+  .syncbar select{background:var(--panel-2);color:var(--chalk);border:1px solid var(--line-strong);border-radius:8px;
+    padding:7px 10px;font-family:'Inter',sans-serif;font-size:13px;min-width:150px;}
+  .mini{background:var(--panel-2);color:var(--chalk);border:1px solid var(--line-strong);border-radius:7px;
+    padding:6px 11px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;cursor:pointer;}
+  .mini:hover:not(:disabled){border-color:var(--clay);color:var(--clay);}
+  .mini:disabled{opacity:.4;cursor:not-allowed;}
+  .syncright{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .syncstate{display:inline-flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.08em;}
+  .cloudbanner{display:none;background:rgba(232,184,75,.10);border:1px solid rgba(232,184,75,.30);border-radius:10px;
+    padding:11px 14px;margin-bottom:14px;font-size:12.5px;color:#f0e3c4;font-family:'IBM Plex Mono',monospace;line-height:1.6;}
+  .cloudbanner.show{display:block;}
+  .cloudbanner b{color:var(--amber);}
+  .aiSetup{display:none;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;padding:12px 14px;margin-bottom:14px;}
+  .aiSetup.show{display:flex;}
+  .aiSetup label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;}
+  .aiSetup input{flex:1;min-width:220px;background:var(--panel-2);color:var(--chalk);border:1px solid var(--line-strong);
+    border-radius:8px;padding:8px 11px;font-family:'IBM Plex Mono',monospace;font-size:12px;}
+  .hist-card{display:none;margin-top:18px;}
+  .hist-card.show{display:block;}
+  #trend{width:100%;display:block;background:#10141a;border-radius:8px;margin-bottom:12px;}
+  .histlist{display:flex;flex-direction:column;gap:8px;}
+  .hrow{display:flex;align-items:center;gap:12px;padding:9px 11px;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;}
+  .hrow .hscore{font-family:'Saira Condensed',sans-serif;font-weight:800;font-size:24px;min-width:38px;text-align:center;}
+  .hrow .hmeta{flex:1;font-size:13px;min-width:0;}
+  .hrow .hmeta b{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--chalk);font-weight:500;}
+  .hrow .hmeta small{display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .hrow .del{color:var(--muted);}
+  .hrow .del:hover{border-color:var(--stitch);color:var(--stitch);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="mark">
+        <svg viewBox="0 0 100 100" fill="none">
+          <circle cx="50" cy="50" r="46" stroke="var(--clay)" stroke-width="3"/>
+          <path d="M30 18 C 44 36, 44 64, 30 82" stroke="var(--stitch)" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+          <path d="M70 18 C 56 36, 56 64, 70 82" stroke="var(--stitch)" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+          <g stroke="var(--stitch)" stroke-width="1.6" stroke-linecap="round">
+            <path d="M33 26 l 5 2"/><path d="M32 38 l 5 1.5"/><path d="M31.5 50 l 5 0"/><path d="M32 62 l 5 -1.5"/><path d="M33 74 l 5 -2"/>
+            <path d="M67 26 l -5 2"/><path d="M68 38 l -5 1.5"/><path d="M68.5 50 l -5 0"/><path d="M68 62 l -5 -1.5"/><path d="M67 74 l -5 -2"/>
+          </g>
+        </svg>
+      </div>
+      <div class="title">
+        <h1>SWING<b>LAB</b></h1>
+        <div class="sub">Markerless Hitting Biomechanics</div>
+      </div>
+    </div>
+    <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Idle</span></div>
+  </header>
+
+  <!-- SYNC / ROSTER -->
+  <div class="syncbar" id="syncbar">
+    <div class="roster">
+      <label>Hitter</label>
+      <select id="hitterSel"><option value="">— none —</option></select>
+      <button class="mini" id="addHitterBtn">+ Add</button>
+    </div>
+    <div class="syncright">
+      <button class="mini" id="histBtn" disabled>History</button>
+      <button class="mini" id="aiSetBtn">AI setup</button>
+      <span class="syncstate"><span class="dot" id="syncDot"></span><span id="syncText">Connecting…</span></span>
+    </div>
+  </div>
+  <div class="cloudbanner" id="cloudBanner"></div>
+  <div class="aiSetup" id="aiSetup">
+    <label>Worker URL</label>
+    <input type="url" id="workerInput" placeholder="https://your-worker.workers.dev">
+    <button class="btn primary" id="saveWorkerBtn" style="padding:8px 14px;font-size:12px;">Save</button>
+    <span class="ai-note">Deploy worker.js to Cloudflare, paste its URL here. Stored in your project, never in the page.</span>
+  </div>
+
+  <!-- INTAKE -->
+  <section class="intake" id="intake">
+    <div class="drop" id="drop">
+      <svg class="plate" viewBox="0 0 60 60" fill="none">
+        <path d="M12 8 H48 V30 L30 50 L12 30 Z" stroke="var(--chalk)" stroke-width="2" opacity="0.7"/>
+      </svg>
+      <h2>Drop a swing clip</h2>
+      <p>One swing, side-on (third-base or first-base view), full body in frame. 2–4 seconds is ideal. Everything runs on your device — the video never leaves the browser.</p>
+      <button class="btn primary" id="pickBtn">Choose video</button>
+      <input type="file" id="file" accept="video/*" style="display:none">
+    </div>
+    <div class="intake-foot">
+      <div class="tips">
+        <b>BEST RESULTS</b><br>
+        · Camera steady, roughly hip height &nbsp; · Hitter fully in frame, head to feet<br>
+        · Even lighting &nbsp; · Trim to a single cut so contact is captured
+      </div>
+      <div class="hand-toggle">
+        Bats
+        <div class="seg" id="handSeg">
+          <button data-h="R" class="on">R</button>
+          <button data-h="L">L</button>
+        </div>
+      </div>
+    </div>
+    <div class="err-box" id="errBox"></div>
+  </section>
+
+  <!-- PROCESSING -->
+  <section class="proc" id="proc">
+    <div class="lbl"><span id="procStage">Loading pose engine…</span><span id="procPct">0%</span></div>
+    <div class="bar"><i id="procBar"></i></div>
+    <div class="lbl"><span id="procDetail">&nbsp;</span><span></span></div>
+    <video id="vid" playsinline muted preload="auto"></video>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="results" id="results">
+    <div class="scoreboard">
+      <div class="composite">
+        <span class="num" id="compNum">—</span><span class="den">/100</span>
+      </div>
+      <div>
+        <div class="cap">Swing Index</div>
+        <div class="verdict" id="verdict"></div>
+      </div>
+      <div class="reset-link" style="display:flex;gap:8px;">
+        <button class="btn primary" id="saveSwingBtn" disabled>Pick a hitter to save</button>
+        <button class="btn ghost" id="resetBtn">New swing</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- left column -->
+      <div class="stack">
+        <div class="card">
+          <h3>3D Reconstruction <span class="tag" id="poseTag">33-pt pose</span></h3>
+          <div class="viewer">
+            <div id="three"></div>
+            <div class="vhud" id="vhud"></div>
+          </div>
+          <div class="vcontrols">
+            <button class="play" id="playBtn" aria-label="Play">▶</button>
+            <input type="range" class="scrub" id="scrub" min="0" max="100" value="0">
+            <span class="frameno" id="frameno">—</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Kinematic Sequence <span class="tag">proximal → distal</span></h3>
+          <canvas id="kchart" width="640" height="280"></canvas>
+          <div class="legend">
+            <span><i style="background:var(--clay)"></i>Pelvis</span>
+            <span><i style="background:var(--sky)"></i>Torso</span>
+            <span><i style="background:var(--amber)"></i>Lead arm</span>
+            <span><i style="background:var(--grass)"></i>Hands</span>
+            <span><i style="background:var(--stitch)"></i>Est. contact</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- right column -->
+      <div class="stack">
+        <div class="card">
+          <h3>Scored Dimensions</h3>
+          <div class="metrics" id="metrics"></div>
+        </div>
+
+        <div class="card">
+          <h3>Prescribed Drills <span class="tag" id="drillSrc">rule-based</span></h3>
+          <div id="drills"></div>
+          <div class="ai-row">
+            <button class="btn ghost" id="aiBtn" style="font-size:12px;padding:8px 14px;">Generate AI coaching</button>
+            <span class="ai-note" id="aiNote">Optional — wire your API proxy in the source to enable.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card hist-card" id="histCard">
+      <h3>Swing History <span class="tag" id="histName">—</span></h3>
+      <canvas id="trend" height="90"></canvas>
+      <div class="histlist" id="histList"></div>
+    </div>
+
+    <div class="foot" id="foot"></div>
+  </section>
+
+  <div class="foot">
+    <b>SwingLab POC.</b> Pose estimation: MediaPipe BlazePose (full) running entirely in-browser. Metrics derived from 3D world landmarks. Scoring thresholds are heuristic ranges from general hitting biomechanics — calibrate against a labeled dataset before treating any score as validated. Not a substitute for a qualified hitting instructor.
+  </div>
+</div>
+
+<!-- ===================== ENGINE ===================== -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { PoseLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, addDoc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBjH3eyxtVIW3XJyu3fGzBhxnxKgP2MBRo",
+  authDomain: "swinglab-15a28.firebaseapp.com",
+  projectId: "swinglab-15a28",
+  storageBucket: "swinglab-15a28.firebasestorage.app",
+  messagingSenderId: "457301793619",
+  appId: "1:457301793619:web:7255c82982aa27392fdfa6"
+};
+
+let fbApp=null, auth=null, db=null, uid=null, cloudOK=false;
+let settings={workerUrl:""};
+let hitters=[], currentHitterId=null;
+let lastRawFrames=null;   // valid frames kept for saving the current analysis
+
+async function initCloud(){
+  try{
+    fbApp=initializeApp(firebaseConfig);
+    auth=getAuth(fbApp); db=getFirestore(fbApp);
+    await signInAnonymously(auth);
+    onAuthStateChanged(auth, async u=>{
+      if(!u) return;
+      uid=u.uid; cloudOK=true; setSync('on','Synced');
+      await loadSettings(); await loadRoster();
+    });
+  }catch(e){
+    cloudOK=false; setSync('off','Offline'); console.warn('Cloud disabled:',e);
+    const s=String((e&&e.code)||'')+String(e);
+    if(/configuration-not-found|admin-restricted|operation-not-allowed/i.test(s))
+      cloudBanner('Swing history is off until you enable <b>Anonymous</b> sign-in: Firebase console → Authentication → Sign-in method → Anonymous → Enable. The analyzer still works without it.');
+  }
+}
+
+const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task";
+const WASM_URL  = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
+
+// MediaPipe landmark indices
+const L = {nose:0, Lsho:11, Rsho:12, Lelb:13, Relb:14, Lwr:15, Rwr:16,
+           Lhip:23, Rhip:24, Lknee:25, Rknee:26, Lank:27, Rank:28};
+const BONES = [[11,12],[11,23],[12,24],[23,24],[11,13],[13,15],[12,14],[14,16],
+               [23,25],[25,27],[24,26],[26,28],[0,11],[0,12]];
+const JOINTS = [0,11,12,13,14,15,16,23,24,25,26,27,28];
+
+let poseLandmarker=null, bats='R', frames=[], analysis=null;
+
+/* ---------- DOM ---------- */
+const $ = s=>document.querySelector(s);
+const statusDot=$('#statusDot'), statusText=$('#statusText');
+const intake=$('#intake'), proc=$('#proc'), results=$('#results');
+const errBox=$('#errBox');
+
+function setStatus(state,text){
+  statusDot.className='dot'+(state?(' '+state):'');
+  statusText.textContent=text;
+}
+function showErr(html){ errBox.innerHTML='<b>Heads up.</b> '+html; errBox.classList.add('show'); }
+function clearErr(){ errBox.classList.remove('show'); }
+
+/* ---------- handedness toggle ---------- */
+$('#handSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  bats=b.dataset.h;
+  [...$('#handSeg').children].forEach(x=>x.classList.toggle('on',x===b));
+});
+
+/* ---------- file intake ---------- */
+const drop=$('#drop'), fileInput=$('#file');
+$('#pickBtn').addEventListener('click',()=>fileInput.click());
+drop.addEventListener('click',e=>{ if(e.target.id!=='pickBtn') fileInput.click(); });
+fileInput.addEventListener('change',e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); });
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f&&f.type.startsWith('video')) handleFile(f); });
+$('#resetBtn').addEventListener('click',reset);
+
+function reset(){
+  results.classList.remove('show'); proc.classList.remove('show'); intake.style.display='';
+  frames=[]; analysis=null; lastRawFrames=null; stopPlayback(); setStatus('','Idle'); clearErr();
+  $('#histCard').classList.remove('show'); updateSaveBtn();
+}
+
+/* ---------- engine load ---------- */
+async function ensureEngine(){
+  if(poseLandmarker) return;
+  setStatus('work','Loading');
+  const vision=await FilesetResolver.forVisionTasks(WASM_URL);
+  try{
+    poseLandmarker=await PoseLandmarker.createFromOptions(vision,{
+      baseOptions:{modelAssetPath:MODEL_URL, delegate:"GPU"},
+      runningMode:"VIDEO", numPoses:1, minPoseDetectionConfidence:0.5, minTrackingConfidence:0.5
+    });
+  }catch(err){
+    poseLandmarker=await PoseLandmarker.createFromOptions(vision,{
+      baseOptions:{modelAssetPath:MODEL_URL, delegate:"CPU"},
+      runningMode:"VIDEO", numPoses:1
+    });
+  }
+}
+
+/* ---------- main pipeline ---------- */
+async function handleFile(file){
+  clearErr();
+  intake.style.display='none'; results.classList.remove('show');
+  proc.classList.add('show');
+  const bar=$('#procBar'), pct=$('#procPct'), stage=$('#procStage'), detail=$('#procDetail');
+  const setProg=(p,s,d)=>{bar.style.width=(p*100).toFixed(0)+'%';pct.textContent=Math.round(p*100)+'%';
+    if(s)stage.textContent=s; if(d!==undefined)detail.textContent=d;};
+
+  try{
+    setProg(0.02,'Loading pose engine…','First run downloads ~10 MB model — cached after.');
+    await ensureEngine();
+
+    const vid=$('#vid');
+    const url=URL.createObjectURL(file);
+    vid.src=url;
+    await new Promise((res,rej)=>{
+      vid.onloadedmetadata=()=>res();
+      vid.onerror=()=>rej(new Error('Could not read that video file.'));
+    });
+    const dur=vid.duration;
+    if(!isFinite(dur)||dur<=0) throw new Error('Video has no readable duration. Try re-exporting the clip.');
+    if(dur>12) setProg(0.05,'Sampling swing…','Long clip — trim to the swing for sharper metrics.');
+
+    // sample plan
+    const MAXF=150;
+    const step=Math.max(dur/MAXF, 1/60);
+    setProg(0.08,'Tracking body…','Estimating 33 landmarks per frame.');
+
+    frames=[];
+    let t=0, i=0, lastTs=-1;
+    while(t<=dur+1e-6){
+      await seekTo(vid,t);
+      let ts=Math.round(t*1000);
+      if(ts<=lastTs) ts=lastTs+1;
+      lastTs=ts;
+      let r=null;
+      try{ r=poseLandmarker.detectForVideo(vid,ts); }catch(e){ r=null; }
+      const lm = r&&r.landmarks&&r.landmarks[0]?r.landmarks[0]:null;
+      const wlm= r&&r.worldLandmarks&&r.worldLandmarks[0]?r.worldLandmarks[0]:null;
+      frames.push({t, lm, wlm});
+      i++;
+      setProg(0.08+0.72*(t/dur), undefined, `Frame ${i} · ${Math.round(t*1000)} ms`);
+      t+=step;
+    }
+    URL.revokeObjectURL(url);
+
+    const valid=frames.filter(f=>f.wlm);
+    if(valid.length<8){
+      proc.classList.remove('show'); intake.style.display='';
+      showErr('I could only track the body in '+valid.length+' frame(s). Make sure the full body is in frame, side-on, with even lighting — then try again.');
+      setStatus('err','No track'); return;
+    }
+
+    setProg(0.86,'Computing biomechanics…','Kinematic sequence · separation · stability.');
+    analysis=analyze(frames, bats);
+    lastRawFrames=analysis.F;
+
+    setProg(0.97,'Rendering…','');
+    renderResults(analysis);
+    setProg(1,'Done','');
+    setTimeout(()=>{ proc.classList.remove('show'); results.classList.add('show'); setStatus('live','Analysis ready'); },220);
+
+  }catch(err){
+    console.error(err);
+    proc.classList.remove('show'); intake.style.display='';
+    let msg=err.message||String(err);
+    if(/fetch|network|Failed to|wasm|model/i.test(msg))
+      msg='Could not load the pose engine. This needs to run over https (e.g. GitHub Pages) so the browser can fetch the model — it will not load from a file:// path or a restricted sandbox.';
+    showErr(msg);
+    setStatus('err','Error');
+  }
+}
+
+function seekTo(video,t){
+  return new Promise(res=>{
+    const done=()=>{ video.removeEventListener('seeked',done); res(); };
+    video.addEventListener('seeked',done);
+    try{ video.currentTime=Math.min(t, (video.duration||t)); }catch(e){ res(); }
+  });
+}
+
+/* ===================== BIOMECHANICS ===================== */
+function v(wlm,i){ return wlm? {x:wlm[i].x, y:wlm[i].y, z:wlm[i].z} : null; }
+function transverseAngle(a,b){ return Math.atan2(b.z-a.z, b.x-a.x); } // rotation about vertical (y)
+function unwrap(arr){
+  const out=arr.slice(); 
+  for(let i=1;i<out.length;i++){
+    let d=out[i]-out[i-1];
+    while(d>Math.PI){out[i]-=2*Math.PI;d=out[i]-out[i-1];}
+    while(d<-Math.PI){out[i]+=2*Math.PI;d=out[i]-out[i-1];}
+  }
+  return out;
+}
+function smooth(arr,w=3){
+  const out=arr.slice(), n=arr.length, k=Math.floor(w/2);
+  for(let i=0;i<n;i++){ let s=0,c=0; for(let j=-k;j<=k;j++){const idx=i+j; if(idx>=0&&idx<n){s+=arr[idx];c++;}} out[i]=s/c; }
+  return out;
+}
+function deriv(vals,times){
+  const n=vals.length, out=new Array(n).fill(0);
+  for(let i=1;i<n-1;i++){ const dt=times[i+1]-times[i-1]; out[i]=dt>0?(vals[i+1]-vals[i-1])/dt:0; }
+  if(n>1){ out[0]=out[1]; out[n-1]=out[n-2]; }
+  return out;
+}
+function dist3(a,b){ return Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z); }
+function angleAt(a,b,c){ // angle at b, between ba and bc, degrees
+  const u={x:a.x-b.x,y:a.y-b.y,z:a.z-b.z}, w={x:c.x-b.x,y:c.y-b.y,z:c.z-b.z};
+  const dot=u.x*w.x+u.y*w.y+u.z*w.z;
+  const m=Math.hypot(u.x,u.y,u.z)*Math.hypot(w.x,w.y,w.z);
+  return m>0? Math.acos(Math.max(-1,Math.min(1,dot/m)))*180/Math.PI : 0;
+}
+
+function analyze(allFrames, bats){
+  const F=allFrames.filter(f=>f.wlm);
+  const times=F.map(f=>f.t);
+
+  // rotation angles
+  const hipAng = unwrap(smooth(F.map(f=>transverseAngle(v(f.wlm,L.Lhip), v(f.wlm,L.Rhip)))));
+  const shoAng = unwrap(smooth(F.map(f=>transverseAngle(v(f.wlm,L.Lsho), v(f.wlm,L.Rsho)))));
+
+  // lead side
+  const lead = bats==='R'
+    ? {sho:L.Lsho, elb:L.Lelb, wr:L.Lwr, hip:L.Lhip, knee:L.Lknee, ank:L.Lank}
+    : {sho:L.Rsho, elb:L.Relb, wr:L.Rwr, hip:L.Rhip, knee:L.Rknee, ank:L.Rank};
+
+  const armAng = unwrap(smooth(F.map(f=>transverseAngle(v(f.wlm,lead.sho), v(f.wlm,lead.wr)))));
+
+  // angular speeds (deg/s)
+  const hipW = deriv(hipAng,times).map(r=>Math.abs(r)*180/Math.PI);
+  const shoW = deriv(shoAng,times).map(r=>Math.abs(r)*180/Math.PI);
+  const armW = deriv(armAng,times).map(r=>Math.abs(r)*180/Math.PI);
+
+  // hand linear speed (m/s) — max of both wrists
+  const handPos=F.map(f=>{ const a=v(f.wlm,L.Lwr),b=v(f.wlm,L.Rwr); return {a,b}; });
+  const handSp=new Array(F.length).fill(0);
+  for(let i=1;i<F.length-1;i++){
+    const dt=times[i+1]-times[i-1]; if(dt<=0)continue;
+    const sa=dist3(handPos[i+1].a,handPos[i-1].a)/dt;
+    const sb=dist3(handPos[i+1].b,handPos[i-1].b)/dt;
+    handSp[i]=Math.max(sa,sb);
+  }
+  const handSpS=smooth(handSp);
+
+  // peaks
+  const peak=(a)=>{let mi=0,mv=-1;for(let i=0;i<a.length;i++)if(a[i]>mv){mv=a[i];mi=i;}return{i:mi,v:mv,t:times[mi]};};
+  const pHip=peak(hipW), pSho=peak(shoW), pArm=peak(armW), pHand=peak(handSpS);
+  const contactIdx=pHand.i;            // estimated contact = peak hand speed
+  const contactT=times[contactIdx];
+
+  // hip-shoulder separation (deg) through swing; peak near launch
+  const sep = shoAng.map((s,i)=>(s-hipAng[i])*180/Math.PI);
+  let peakSep=0, sepIdx=0;
+  for(let i=0;i<=contactIdx;i++){ if(Math.abs(sep[i])>Math.abs(peakSep)){peakSep=sep[i];sepIdx=i;} }
+
+  // head stability — nose path length from initiation→contact (cm)
+  let initIdx=0;
+  const hipThresh=pHip.v*0.2;
+  for(let i=0;i<contactIdx;i++){ if(hipW[i]>hipThresh){initIdx=i;break;} }
+  let headPath=0;
+  for(let i=initIdx+1;i<=contactIdx;i++){ headPath+=dist3(v(F[i].wlm,L.nose),v(F[i-1].wlm,L.nose)); }
+  headPath*=100; // cm
+
+  // front-leg block — lead knee angle: load vs contact (extension into contact = good)
+  const kneeAngle=i=>angleAt(v(F[i].wlm,lead.hip), v(F[i].wlm,lead.knee), v(F[i].wlm,lead.ank));
+  const kneeLoad=kneeAngle(initIdx), kneeContact=kneeAngle(contactIdx);
+  const kneeExt=kneeContact-kneeLoad; // positive = straightening (blocking)
+
+  const timeToContactMs=(contactT-times[initIdx])*1000;
+
+  // ---- scoring ----
+  const order=[{n:'pelvis',t:pHip.t},{n:'torso',t:pSho.t},{n:'arm',t:pArm.t},{n:'hand',t:pHand.t}];
+  const sorted=[...order].sort((a,b)=>a.t-b.t).map(o=>o.n);
+  const ideal=['pelvis','torso','arm','hand'];
+  let inversions=0; for(let i=0;i<4;i++) if(sorted[i]!==ideal[i]) inversions++;
+  const seqOrderScore = Math.max(0, 100 - inversions*22);
+
+  // lag: average gap between consecutive peaks (want staggered, not simultaneous)
+  const peakTimes=[pHip.t,pSho.t,pArm.t,pHand.t].sort((a,b)=>a-b);
+  const gaps=[]; for(let i=1;i<4;i++) gaps.push((peakTimes[i]-peakTimes[i-1])*1000);
+  const avgGap=gaps.reduce((a,b)=>a+b,0)/gaps.length;
+  const lagScore=rangeScore(avgGap, 25, 90, 5, 180);
+
+  const sepScore = rangeScore(Math.abs(peakSep), 30, 55, 10, 80);
+  const pelvisSpeedScore = rangeScore(pHip.v, 450, 900, 150, 1300);
+  const handSpeedScore = rangeScore(pHand.v, 5, 11, 2.5, 16);
+  const headScore = invRangeScore(headPath, 4, 12); // <4cm great, >12cm poor
+  const blockScore = rangeScore(kneeExt, 5, 45, -15, 70);
+
+  const dims=[
+    {key:'seq',  name:'Kinematic sequence order', note:'Peaks fired '+sorted.join(' → '),
+      val:(inversions===0?'In order':inversions+' out of order'), score:seqOrderScore, color:'clay'},
+    {key:'lag',  name:'Sequence timing / lag', note:'Avg gap between segment peaks',
+      val:avgGap.toFixed(0)+' ms', score:lagScore, color:'clay'},
+    {key:'sep',  name:'Hip–shoulder separation', note:'Peak X-factor before contact',
+      val:Math.abs(peakSep).toFixed(0)+'°', score:sepScore, color:'sky'},
+    {key:'pelv', name:'Pelvis rotation speed', note:'Peak angular velocity',
+      val:Math.round(pHip.v)+' °/s', score:pelvisSpeedScore, color:'sky'},
+    {key:'hand', name:'Hand speed at release', note:'Peak wrist speed (bat-speed proxy)',
+      val:pHand.v.toFixed(1)+' m/s', score:handSpeedScore, color:'amber'},
+    {key:'head', name:'Head stability', note:'Head travel, launch → contact',
+      val:headPath.toFixed(1)+' cm', score:headScore, color:'grass'},
+    {key:'block',name:'Front-leg block (proxy)', note:'Lead-knee extension into contact',
+      val:(kneeExt>=0?'+':'')+kneeExt.toFixed(0)+'°', score:blockScore, color:'grass'},
+  ];
+
+  const weights={seq:1.6,lag:1.0,sep:1.4,pelv:1.0,hand:1.2,head:1.0,block:1.1};
+  let ws=0,wt=0; dims.forEach(d=>{ws+=d.score*weights[d.key];wt+=weights[d.key];});
+  const composite=Math.round(ws/wt);
+
+  return {
+    F, times, dims, composite,
+    series:{hipW,shoW,armW,handSp:handSpS, times},
+    peaks:{pHip,pSho,pArm,pHand}, contactIdx, contactT, initIdx,
+    extras:{timeToContactMs, sorted, inversions, peakSep, headPath, kneeContact, kneeExt}
+  };
+}
+
+function rangeScore(x,goodLo,goodHi,hardLo,hardHi){
+  if(x>=goodLo&&x<=goodHi) return 100;
+  if(x<goodLo) return Math.max(0, Math.round(100*(x-hardLo)/(goodLo-hardLo)));
+  return Math.max(0, Math.round(100*(hardHi-x)/(hardHi-goodHi)));
+}
+function invRangeScore(x,goodMax,hardMax){ // smaller better
+  if(x<=goodMax) return 100;
+  if(x>=hardMax) return 0;
+  return Math.round(100*(hardMax-x)/(hardMax-goodMax));
+}
+
+/* ===================== RENDER ===================== */
+const COLOR={clay:'#E07A3E',sky:'#5BA9C8',amber:'#E8B84B',grass:'#6FA85A',stitch:'#E23B2E'};
+
+function renderResults(a){
+  // composite + verdict
+  $('#compNum').textContent=a.composite;
+  $('#compNum').style.color = a.composite>=78?COLOR.grass : a.composite>=58?COLOR.amber : COLOR.stitch;
+  const low=[...a.dims].sort((x,y)=>x.score-y.score)[0];
+  const high=[...a.dims].sort((x,y)=>y.score-x.score)[0];
+  $('#verdict').innerHTML = a.composite>=78
+    ? `Efficient swing. Strongest piece is <b>${high.name.toLowerCase()}</b>; smallest leak is <b>${low.name.toLowerCase()}</b>.`
+    : a.composite>=58
+    ? `Solid base with room to add. Biggest opportunity: <b>${low.name.toLowerCase()}</b>.`
+    : `Energy is leaking out of the chain. Start with <b>${low.name.toLowerCase()}</b>.`;
+
+  // metrics
+  const mEl=$('#metrics'); mEl.innerHTML='';
+  a.dims.forEach(d=>{
+    const c=COLOR[d.color]||COLOR.clay;
+    const row=document.createElement('div'); row.className='metric';
+    row.innerHTML=`
+      <div class="mname">${d.name}<small>${d.note}</small></div>
+      <div class="mval"><b>${d.val}</b><br><span style="color:${c}">${d.score}</span><span style="color:var(--muted)">/100</span></div>
+      <div class="pill"><i style="background:${c}"></i></div>`;
+    mEl.appendChild(row);
+    requestAnimationFrame(()=>{ row.querySelector('.pill > i').style.width=d.score+'%'; });
+  });
+
+  // extras footer
+  $('#foot').innerHTML =
+    `<b>SEQUENCE</b> ${a.extras.sorted.join(' → ')} · `+
+    `<b>TIME TO CONTACT</b> ${Math.round(a.extras.timeToContactMs)} ms · `+
+    `<b>PEAK SEPARATION</b> ${Math.abs(a.extras.peakSep).toFixed(0)}° · `+
+    `<b>HEAD TRAVEL</b> ${a.extras.headPath.toFixed(1)} cm · `+
+    `<b>FRAMES TRACKED</b> ${a.F.length}`;
+
+  drawKChart(a);
+  setup3D(a);
+  renderDrills(a, ruleDrills(a));
+  updateSaveBtn();
+}
+
+/* ---- kinematic sequence chart ---- */
+function drawKChart(a){
+  const cv=$('#kchart'), ctx=cv.getContext('2d');
+  const W=cv.width=cv.clientWidth*devicePixelRatio, H=cv.height=280*devicePixelRatio;
+  ctx.scale(1,1);
+  const padL=44*devicePixelRatio,padR=14*devicePixelRatio,padT=14*devicePixelRatio,padB=30*devicePixelRatio;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  ctx.clearRect(0,0,W,H);
+  const t0=a.times[0], t1=a.times[a.times.length-1], span=Math.max(t1-t0,1e-3);
+  const xOf=t=>padL+((t-t0)/span)*plotW;
+  // grid
+  ctx.strokeStyle='rgba(236,231,221,0.07)';ctx.lineWidth=1*devicePixelRatio;ctx.font=`${11*devicePixelRatio}px 'IBM Plex Mono', monospace`;ctx.fillStyle='rgba(138,147,160,0.8)';
+  for(let g=0;g<=4;g++){ const y=padT+plotH*g/4; ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(W-padR,y);ctx.stroke();
+    ctx.fillText((100-g*25)+'%', 6*devicePixelRatio, y+4*devicePixelRatio); }
+  // x labels (ms)
+  ctx.textAlign='center';
+  for(let g=0;g<=4;g++){ const t=t0+span*g/4; const x=xOf(t); ctx.fillText(Math.round((t-t0)*1000)+'ms', x, H-9*devicePixelRatio); }
+  ctx.textAlign='left';
+
+  const series=[
+    {d:a.series.hipW, c:COLOR.clay, peak:a.peaks.pHip},
+    {d:a.series.shoW, c:COLOR.sky,  peak:a.peaks.pSho},
+    {d:a.series.armW, c:COLOR.amber,peak:a.peaks.pArm},
+    {d:a.series.handSp,c:COLOR.grass,peak:a.peaks.pHand},
+  ];
+  series.forEach(s=>{
+    const mx=Math.max(...s.d,1e-6);
+    ctx.strokeStyle=s.c;ctx.lineWidth=2.4*devicePixelRatio;ctx.beginPath();
+    s.d.forEach((val,i)=>{ const x=xOf(a.times[i]); const y=padT+plotH*(1-val/mx);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+    ctx.stroke();
+    // peak dot
+    const px=xOf(s.peak.t), py=padT+plotH*(1-1);
+    ctx.fillStyle=s.c;ctx.beginPath();ctx.arc(px,py,4*devicePixelRatio,0,7);ctx.fill();
+  });
+  // contact line
+  const cx=xOf(a.contactT);
+  ctx.strokeStyle=COLOR.stitch;ctx.lineWidth=1.6*devicePixelRatio;ctx.setLineDash([5*devicePixelRatio,4*devicePixelRatio]);
+  ctx.beginPath();ctx.moveTo(cx,padT);ctx.lineTo(cx,padT+plotH);ctx.stroke();ctx.setLineDash([]);
+}
+
+/* ===================== 3D VIEWER ===================== */
+let scene,camera,renderer,controls,spheres=[],lines=[],raf3d=null;
+let playing=false, curIdx=0, playTimer=null;
+
+function setup3D(a){
+  const host=$('#three');
+  host.innerHTML='';
+  const w=host.clientWidth||600, h=host.clientHeight||400;
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(45,w/h,0.01,100);
+  camera.position.set(0,0.2,3.2);
+  renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  renderer.setSize(w,h);renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  host.appendChild(renderer.domElement);
+  controls=new OrbitControls(camera,renderer.domElement);
+  controls.enableDamping=true;controls.target.set(0,0,0);
+  scene.add(new THREE.AmbientLight(0xffffff,0.85));
+  const dir=new THREE.DirectionalLight(0xffffff,0.6);dir.position.set(1,2,2);scene.add(dir);
+
+  // batter's box ground grid (clay)
+  const grid=new THREE.GridHelper(2.4,12,0xE07A3E,0x2a3138);
+  grid.position.y=-1.0; grid.material.opacity=0.25; grid.material.transparent=true;
+  scene.add(grid);
+
+  // joints
+  spheres=JOINTS.map(()=>{
+    const m=new THREE.Mesh(new THREE.SphereGeometry(0.022,16,16),
+      new THREE.MeshStandardMaterial({color:0xECE7DD,emissive:0x000000,roughness:0.5}));
+    scene.add(m);return m;
+  });
+  // bones
+  lines=BONES.map(()=>{
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6),3));
+    const l=new THREE.Line(g,new THREE.LineBasicMaterial({color:0xE07A3E}));scene.add(l);return l;
+  });
+
+  const ro=new ResizeObserver(()=>{const W=host.clientWidth,H=host.clientHeight;if(W&&H){renderer.setSize(W,H);camera.aspect=W/H;camera.updateProjectionMatrix();}});
+  ro.observe(host);
+
+  // controls wiring
+  const scrub=$('#scrub'); scrub.max=a.F.length-1; scrub.value=0;
+  scrub.oninput=()=>{ stopPlayback(); setFrame(+scrub.value); };
+  $('#playBtn').onclick=togglePlay;
+
+  curIdx=0; setFrame(0);
+  if(raf3d) cancelAnimationFrame(raf3d);
+  (function loop(){ controls.update(); renderer.render(scene,camera); raf3d=requestAnimationFrame(loop); })();
+}
+
+function setFrame(i){
+  const a=analysis; if(!a)return;
+  i=Math.max(0,Math.min(a.F.length-1,i));
+  curIdx=i;
+  const f=a.F[i], wlm=f.wlm;
+  // map world (meters, y-down) -> scene (y-up), scale up
+  const S=1.0;
+  const pos=idx=>{ const p=wlm[idx]; return new THREE.Vector3(p.x*S, -p.y*S, -p.z*S); };
+  JOINTS.forEach((idx,k)=>{ const p=pos(idx); spheres[k].position.copy(p);
+    const isContactJoint=(i===a.contactIdx&&(idx===L.Lwr||idx===L.Rwr));
+    spheres[k].material.color.setHex(isContactJoint?0xE23B2E:0xECE7DD);
+  });
+  BONES.forEach((b,k)=>{ const p1=pos(b[0]),p2=pos(b[1]);
+    const arr=lines[k].geometry.attributes.position.array;
+    arr[0]=p1.x;arr[1]=p1.y;arr[2]=p1.z;arr[3]=p2.x;arr[4]=p2.y;arr[5]=p2.z;
+    lines[k].geometry.attributes.position.needsUpdate=true;
+    const atContact=(i===a.contactIdx);
+    lines[k].material.color.setHex(atContact?0xE23B2E:0xE07A3E);
+  });
+  // hud + scrub
+  const isC=(i===a.contactIdx);
+  $('#vhud').innerHTML=`FRAME <b>${i+1}/${a.F.length}</b><br>T <b>${Math.round(a.F[i].t*1000)} ms</b>`+(isC?'<br><span class="ct">◉ EST. CONTACT</span>':'');
+  $('#frameno').textContent=`${i+1} / ${a.F.length}`;
+  $('#scrub').value=i;
+}
+function togglePlay(){ playing?stopPlayback():startPlayback(); }
+function startPlayback(){
+  const a=analysis; if(!a)return;
+  playing=true; $('#playBtn').textContent='❚❚';
+  if(curIdx>=a.F.length-1) curIdx=0;
+  const dt=(a.F[1].t-a.F[0].t)*1000||33;
+  playTimer=setInterval(()=>{
+    if(curIdx>=a.F.length-1){ stopPlayback(); return; }
+    setFrame(curIdx+1);
+  }, Math.max(20,dt));
+}
+function stopPlayback(){ playing=false; $('#playBtn').textContent='▶'; if(playTimer){clearInterval(playTimer);playTimer=null;} }
+
+/* ===================== DRILLS ===================== */
+const DRILL_LIB={
+  seq:{title:'Med-ball rotational throws', why:'Out-of-order peaks mean the chain is firing top-down. Heavy rotational throws retrain hips-first sequencing.',
+    how:'Side-on to a wall, 6–8 lb ball. Load into the back hip, then throw by driving the pelvis first and letting the torso and arms follow. 3×8 each side.'},
+  lag:{title:'Connection-ball / towel hitting', why:'Peaks bunched together leak energy. A connection ball forces the barrel to lag behind the body.',
+    how:'Tuck a connection ball (or rolled towel) between lead bicep and chest; take dry swings keeping it pinned through contact. 3×10.'},
+  sep:{title:'Step-behind hip-load drill', why:'Low hip–shoulder separation caps power. Train the stretch between pelvis and shoulders.',
+    how:'From a wide base, counter-rotate the shoulders as the front hip loads, hold the stretch a beat, then fire. 3×6 dry, then off a tee.'},
+  pelv:{title:'Hip-turn band resistance', why:'Slow pelvis rotation limits the engine. Resisted turns build rotational rate.',
+    how:'Loop a band at hip height; rotate the pelvis against it explosively, snapping back to neutral. 3×8 each side.'},
+  hand:{title:'Overload / underload bat swings', why:'Low hand speed at release responds well to varied-load barrel speed work.',
+    how:'Alternate a heavier and a lighter bat for dry swings, focusing on a fast, loose release. 3×5 each, full intent.'},
+  head:{title:'Tee work with eyes-on-contact', why:'Excess head travel pulls the eyes off the ball and de-stabilizes the swing plane.',
+    how:'Off a tee, keep your head/eyes fixed on the contact point through the finish. Film side-on and check head drift. 3×8.'},
+  block:{title:'Front-leg block wall drill', why:'A soft front side bleeds off rotational energy. Train the lead leg to firm up into contact.',
+    how:'Stand a few inches off a wall with the lead leg; swing and feel the front leg post and brace rather than collapse. 3×8.'},
+};
+function ruleDrills(a){
+  const ranked=[...a.dims].sort((x,y)=>x.score-y.score);
+  const picks=ranked.filter(d=>d.score<78).slice(0,3);
+  const list = picks.length?picks:[ranked[0]];
+  return list.map(d=>{ const lib=DRILL_LIB[d.key]; return {
+    title:lib.title, why:lib.why, how:lib.how, dim:d.name, score:d.score, ok:d.score>=78
+  };});
+}
+function renderDrills(a, drills){
+  const el=$('#drills'); el.innerHTML='';
+  drills.forEach(d=>{
+    const node=document.createElement('div');node.className='drill';
+    node.innerHTML=`<div class="dh"><span class="badge ${d.ok?'ok':''}">${d.dim} · ${d.score}</span><h4>${d.title}</h4></div>
+      <p>${d.why}</p><p>${d.how}</p>`;
+    el.appendChild(node);
+  });
+}
+
+/* ---- optional AI coaching ---- */
+$('#aiBtn').addEventListener('click', async ()=>{
+  if(!analysis)return;
+  const note=$('#aiNote'), btn=$('#aiBtn');
+  const payload={ composite:analysis.composite, dimensions:analysis.dims.map(d=>({name:d.name,value:d.val,score:d.score})),
+    sequence:analysis.extras.sorted.join(' -> '), separation:Math.abs(analysis.extras.peakSep).toFixed(0)+'deg',
+    timeToContactMs:Math.round(analysis.extras.timeToContactMs) };
+  const url=settings.workerUrl;
+  if(!url){
+    note.textContent='No Worker URL yet — click “AI setup” above and paste your Cloudflare Worker URL.';
+    return;
+  }
+  btn.disabled=true; note.textContent='Asking Claude…';
+  try{
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({metrics:payload})});
+    const data=await r.json();
+    const text=data.text||data.content?.[0]?.text||'(no response)';
+    $('#drillSrc').textContent='AI-written';
+    const el=$('#drills'); const node=document.createElement('div');node.className='drill';
+    node.innerHTML=`<div class="dh"><span class="badge ok">Claude</span><h4>Coaching notes</h4></div><p style="white-space:pre-wrap;color:#dfe3e8">${text.replace(/</g,'&lt;')}</p>`;
+    el.prepend(node); note.textContent='Generated from your tracked metrics.';
+  }catch(e){ note.textContent='AI request failed — check the proxy URL and CORS.'; }
+  finally{ btn.disabled=false; }
+});
+
+/* ===================== CLOUD: roster · save · history · settings ===================== */
+const syncDot=$('#syncDot'), syncText=$('#syncText'), hitterSel=$('#hitterSel');
+function setSync(state,text){
+  if(!syncDot)return;
+  syncDot.className='dot'+(state==='on'?' live':state==='work'?' work':state==='off'?' err':'');
+  syncText.textContent=text;
+}
+function cloudBanner(html){ const b=$('#cloudBanner'); b.innerHTML=html; b.classList.add('show'); }
+function escapeHtml(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+async function loadSettings(){
+  try{
+    const s=await getDoc(doc(db,'users',uid,'meta','settings'));
+    if(s.exists()) settings={...settings, ...s.data()};
+    $('#workerInput').value=settings.workerUrl||'';
+    $('#aiNote').textContent = settings.workerUrl ? 'AI coaching ready — routes through your Worker.' : 'Click “AI setup” to add your Worker URL.';
+  }catch(e){ console.warn(e); }
+}
+async function saveWorkerUrl(){
+  const v=$('#workerInput').value.trim();
+  settings.workerUrl=v;
+  if(cloudOK){ try{ await setDoc(doc(db,'users',uid,'meta','settings'),{workerUrl:v},{merge:true}); }catch(e){} }
+  $('#aiSetup').classList.remove('show');
+  $('#aiNote').textContent = v ? 'AI coaching ready — routes through your Worker.' : 'No Worker URL set.';
+}
+
+async function loadRoster(){
+  if(!cloudOK) return;
+  try{
+    const snap=await getDocs(query(collection(db,'users',uid,'hitters'),orderBy('name')));
+    hitters=snap.docs.map(d=>({id:d.id,...d.data()}));
+    hitterSel.innerHTML='<option value="">— none —</option>'+
+      hitters.map(h=>`<option value="${h.id}">${escapeHtml(h.name)} (${h.bats})</option>`).join('');
+    if(currentHitterId) hitterSel.value=currentHitterId;
+  }catch(e){ console.warn(e); }
+}
+async function addHitter(){
+  if(!cloudOK){ cloudBanner('Connect first — enable Anonymous sign-in to add hitters.'); return; }
+  const name=prompt('Hitter name?'); if(!name) return;
+  const b=prompt('Bats? R or L','R'); const bb=(b&&b.toUpperCase().startsWith('L'))?'L':'R';
+  try{
+    const ref=await addDoc(collection(db,'users',uid,'hitters'),{name:name.trim(),bats:bb,createdAt:serverTimestamp()});
+    currentHitterId=ref.id; await loadRoster(); hitterSel.value=ref.id; onHitterChange();
+  }catch(e){ alert('Could not add hitter. Check Anonymous auth + Firestore rules.'); }
+}
+function onHitterChange(){
+  currentHitterId=hitterSel.value||null;
+  const h=hitters.find(x=>x.id===currentHitterId);
+  if(h){ bats=h.bats; [...$('#handSeg').children].forEach(x=>x.classList.toggle('on',x.dataset.h===bats)); }
+  $('#histBtn').disabled=!currentHitterId;
+  updateSaveBtn();
+  if(currentHitterId) loadHistory(); else $('#histCard').classList.remove('show');
+}
+function updateSaveBtn(){
+  const btn=$('#saveSwingBtn'); if(!btn) return;
+  const h=hitters.find(x=>x.id===currentHitterId);
+  if(!currentHitterId){ btn.disabled=true; btn.textContent='Pick a hitter to save'; return; }
+  btn.disabled=!(cloudOK&&analysis);
+  btn.textContent='Save to '+(h?h.name:'hitter');
+}
+
+function r3(x){ return Math.round(x*1000)/1000; }
+function packFrames(F){
+  return F.map(f=>({t:+f.t.toFixed(3), p:JOINTS.map(idx=>{const q=f.wlm[idx];return [r3(q.x),r3(q.y),r3(q.z)];})}));
+}
+function unpackFrames(packed){
+  return packed.map(fr=>{ const wlm=new Array(33).fill(null);
+    JOINTS.forEach((idx,k)=>{ const c=fr.p[k]; wlm[idx]={x:c[0],y:c[1],z:c[2]}; });
+    return {t:fr.t, wlm};
+  });
+}
+
+async function saveSwing(){
+  if(!cloudOK||!currentHitterId||!analysis) return;
+  const btn=$('#saveSwingBtn'); const old=btn.textContent; btn.disabled=true; btn.textContent='Saving…';
+  try{
+    const rec={
+      hitterId:currentHitterId, bats, composite:analysis.composite,
+      dims:analysis.dims.map(d=>({name:d.name,val:d.val,score:d.score})),
+      sequence:analysis.extras.sorted.join(' → '),
+      extras:{ timeToContactMs:Math.round(analysis.extras.timeToContactMs),
+               peakSep:+Math.abs(analysis.extras.peakSep).toFixed(0),
+               headPath:+analysis.extras.headPath.toFixed(1) },
+      replay:{ frames:packFrames(lastRawFrames||analysis.F), contactIdx:analysis.contactIdx },
+      createdAt:serverTimestamp()
+    };
+    await addDoc(collection(db,'users',uid,'swings'),rec);
+    btn.textContent='Saved ✓'; setTimeout(()=>updateSaveBtn(),1400);
+    loadHistory();
+  }catch(e){ console.warn(e); alert('Save failed: '+(e.message||e)); btn.textContent=old; btn.disabled=false; }
+}
+
+async function loadHistory(){
+  if(!cloudOK||!currentHitterId) return;
+  const card=$('#histCard'), list=$('#histList');
+  const h=hitters.find(x=>x.id===currentHitterId);
+  $('#histName').textContent=h?h.name:'—';
+  try{
+    // single-field orderBy → no composite index needed; filter by hitter client-side
+    const snap=await getDocs(query(collection(db,'users',uid,'swings'),orderBy('createdAt','desc'),limit(150)));
+    const swings=snap.docs.map(d=>({id:d.id,...d.data()})).filter(s=>s.hitterId===currentHitterId);
+    card.classList.add('show');
+    if(!swings.length){ list.innerHTML='<div class="empty">No saved swings yet. Analyze a clip, then hit <b>Save</b>.</div>'; drawTrend([]); return; }
+    drawTrend([...swings].reverse());
+    list.innerHTML=swings.map(s=>{
+      const dt=s.createdAt&&s.createdAt.toDate?s.createdAt.toDate():new Date();
+      const ds=dt.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+dt.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+      const col=s.composite>=78?'var(--grass)':s.composite>=58?'var(--amber)':'var(--stitch)';
+      return `<div class="hrow">
+        <span class="hscore" style="color:${col}">${s.composite}</span>
+        <span class="hmeta"><b>${ds}</b><small>${escapeHtml(s.sequence||'')}</small></span>
+        <button class="mini load" data-id="${s.id}">Load</button>
+        <button class="mini del" data-id="${s.id}">✕</button></div>`;
+    }).join('');
+    list.querySelectorAll('.load').forEach(b=>b.onclick=()=>loadSavedSwing(swings.find(s=>s.id===b.dataset.id)));
+    list.querySelectorAll('.del').forEach(b=>b.onclick=()=>delSwing(b.dataset.id));
+  }catch(e){ console.warn(e); list.innerHTML='<div class="empty">Could not load history. Check Firestore rules.</div>'; }
+}
+async function delSwing(id){
+  if(!confirm('Delete this swing?')) return;
+  try{ await deleteDoc(doc(db,'users',uid,'swings',id)); loadHistory(); }catch(e){}
+}
+function loadSavedSwing(s){
+  if(!s||!s.replay||!s.replay.frames){ alert('This swing has no replay data.'); return; }
+  bats=s.bats||bats;
+  analysis=analyze(unpackFrames(s.replay.frames),bats);
+  lastRawFrames=analysis.F;
+  intake.style.display='none'; proc.classList.remove('show'); results.classList.add('show');
+  renderResults(analysis);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function drawTrend(swings){
+  const cv=$('#trend'); if(!cv) return;
+  const ctx=cv.getContext('2d');
+  const W=cv.width=cv.clientWidth*devicePixelRatio, H=cv.height=90*devicePixelRatio;
+  ctx.clearRect(0,0,W,H);
+  if(!swings.length) return;
+  const pad=10*devicePixelRatio;
+  const xs=i=>swings.length<2?W/2:pad+i*(W-2*pad)/(swings.length-1);
+  const ys=v=>H-pad-(v/100)*(H-2*pad);
+  [58,78].forEach(v=>{ ctx.strokeStyle='rgba(236,231,221,0.08)';ctx.lineWidth=devicePixelRatio;ctx.beginPath();ctx.moveTo(pad,ys(v));ctx.lineTo(W-pad,ys(v));ctx.stroke(); });
+  ctx.strokeStyle=COLOR.clay;ctx.lineWidth=2.2*devicePixelRatio;ctx.beginPath();
+  swings.forEach((s,i)=>{ const x=xs(i),y=ys(s.composite); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); });
+  ctx.stroke();
+  swings.forEach((s,i)=>{ const x=xs(i),y=ys(s.composite);
+    ctx.fillStyle=s.composite>=78?COLOR.grass:s.composite>=58?COLOR.amber:COLOR.stitch;
+    ctx.beginPath();ctx.arc(x,y,3.2*devicePixelRatio,0,7);ctx.fill(); });
+}
+
+hitterSel.addEventListener('change',onHitterChange);
+$('#addHitterBtn').addEventListener('click',addHitter);
+$('#histBtn').addEventListener('click',()=>{ const c=$('#histCard'); c.classList.toggle('show'); if(c.classList.contains('show')) loadHistory(); });
+$('#aiSetBtn').addEventListener('click',()=>$('#aiSetup').classList.toggle('show'));
+$('#saveWorkerBtn').addEventListener('click',saveWorkerUrl);
+$('#saveSwingBtn').addEventListener('click',saveSwing);
+
+setSync('work','Connecting…');
+initCloud();
+setStatus('','Idle');
+</script>
+</body>
+</html>
