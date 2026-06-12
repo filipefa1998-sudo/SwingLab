@@ -203,8 +203,34 @@
   .hrow .hmeta{flex:1;font-size:13px;min-width:0;}
   .hrow .hmeta b{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--chalk);font-weight:500;}
   .hrow .hmeta small{display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .hrow .del{color:var(--muted);}
-  .hrow .del:hover{border-color:var(--stitch);color:var(--stitch);}
+  .qband{display:none;align-items:center;gap:10px;flex-wrap:wrap;border-radius:10px;padding:10px 14px;margin-bottom:16px;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.03em;}
+  .qband.show{display:flex;}
+  .qband.good{background:rgba(111,168,90,.10);border:1px solid rgba(111,168,90,.28);color:#cfe6c2;}
+  .qband.warn{background:rgba(232,184,75,.10);border:1px solid rgba(232,184,75,.30);color:#f0e3c4;}
+  .qband.bad{background:rgba(226,59,46,.10);border:1px solid rgba(226,59,46,.30);color:#f0c9c4;}
+  .qband .qchip{display:inline-flex;align-items:center;gap:6px;}
+  .qband b{color:var(--chalk);}
+  .contactctl{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;flex-wrap:wrap;
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.04em;}
+  .contactctl span b{color:var(--stitch);}
+  .cmp-card{display:none;margin-top:18px;}
+  .cmp-card.show{display:block;}
+  .cmp-pick{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px;}
+  .cmp-pick label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:8px;}
+  .cmp-pick select{background:var(--panel-2);color:var(--chalk);border:1px solid var(--line-strong);border-radius:8px;padding:7px 10px;font-family:'Inter',sans-serif;font-size:13px;}
+  .cmp-viewer{position:relative;background:radial-gradient(120% 100% at 50% 0%, #1e252d, #11151a);border-radius:10px;overflow:hidden;aspect-ratio:16/10;min-height:300px;}
+  #cmpThree{position:absolute;inset:0;width:100%;height:100%;}
+  .cmp-legend{position:absolute;top:10px;left:12px;display:flex;flex-direction:column;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);}
+  .cmp-legend span{display:inline-flex;align-items:center;gap:7px;}
+  .cmp-legend i{width:14px;height:4px;border-radius:2px;}
+  .cmp-legend b{color:var(--chalk);font-weight:500;}
+  .cmp-delta{margin-top:14px;display:flex;flex-direction:column;gap:7px;}
+  .drow{display:grid;grid-template-columns:1.4fr .8fr .8fr .9fr;gap:8px;align-items:center;padding:7px 10px;border-radius:8px;background:var(--panel-2);font-size:12.5px;}
+  .drow.head{background:transparent;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;padding-bottom:2px;}
+  .drow .dn{font-weight:500;}
+  .drow .dv{font-family:'IBM Plex Mono',monospace;text-align:center;}
+  .drow .dd{font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:right;}
 </style>
 </head>
 <body>
@@ -304,6 +330,8 @@
       </div>
     </div>
 
+    <div class="qband" id="qband"></div>
+
     <div class="grid">
       <!-- left column -->
       <div class="stack">
@@ -317,6 +345,10 @@
             <button class="play" id="playBtn" aria-label="Play">▶</button>
             <input type="range" class="scrub" id="scrub" min="0" max="100" value="0">
             <span class="frameno" id="frameno">—</span>
+          </div>
+          <div class="contactctl">
+            <span id="contactLbl">Est. contact: frame —</span>
+            <button class="mini" id="setContactBtn">Set contact = current frame</button>
           </div>
         </div>
 
@@ -352,16 +384,35 @@
     </div>
 
     <div class="card hist-card" id="histCard">
-      <h3>Swing History <span class="tag" id="histName">—</span></h3>
+      <h3>Swing History <span class="tag" id="histName">—</span>
+        <button class="mini" id="compareBtn" style="margin-left:auto">Compare A/B</button>
+      </h3>
       <canvas id="trend" height="90"></canvas>
       <div class="histlist" id="histList"></div>
+    </div>
+
+    <div class="card cmp-card" id="cmpCard">
+      <h3>Before / After <button class="mini" id="cmpClose" style="margin-left:auto">Close</button></h3>
+      <div class="cmp-pick">
+        <label>A <select id="cmpA"></select></label>
+        <label>B <select id="cmpB"></select></label>
+      </div>
+      <div class="cmp-viewer"><div id="cmpThree"></div>
+        <div class="cmp-legend"><span><i style="background:var(--clay)"></i><b id="cmpAname">A</b></span><span><i style="background:var(--sky)"></i><b id="cmpBname">B</b></span></div>
+      </div>
+      <div class="vcontrols">
+        <span class="frameno" id="cmpPhaseLbl" style="min-width:120px;text-align:left">contact-aligned</span>
+        <input type="range" class="scrub" id="cmpScrub" min="0" max="100" value="50">
+      </div>
+      <div class="cmp-delta" id="cmpDelta"></div>
     </div>
 
     <div class="foot" id="foot"></div>
   </section>
 
   <div class="foot">
-    <b>SwingLab POC.</b> Pose estimation: MediaPipe BlazePose (full) running entirely in-browser. Metrics derived from 3D world landmarks. Scoring thresholds are heuristic ranges from general hitting biomechanics — calibrate against a labeled dataset before treating any score as validated. Not a substitute for a qualified hitting instructor.
+    <b>SwingLab POC.</b> Pose estimation: MediaPipe BlazePose (full) running entirely in-browser. Metrics derived from 3D world landmarks. Scoring thresholds are heuristic ranges from general hitting biomechanics — calibrate against a labeled dataset before treating any score as validated. Not a substitute for a qualified hitting instructor.<br>
+    <b>Privacy.</b> Your video is processed on your device and never uploaded. Only the skeleton data and scores are saved, to your own Firebase project, under an anonymous ID on your device. Get a parent/guardian's permission before recording a minor.
   </div>
 </div>
 
@@ -594,9 +645,10 @@ function angleAt(a,b,c){ // angle at b, between ba and bc, degrees
   return m>0? Math.acos(Math.max(-1,Math.min(1,dot/m)))*180/Math.PI : 0;
 }
 
-function analyze(allFrames, bats){
+function analyze(allFrames, bats, forcedContact){
   const F=allFrames.filter(f=>f.wlm);
   const times=F.map(f=>f.t);
+  const N=F.length;
 
   // rotation angles
   const hipAng = unwrap(smooth(F.map(f=>transverseAngle(v(f.wlm,L.Lhip), v(f.wlm,L.Rhip)))));
@@ -615,41 +667,73 @@ function analyze(allFrames, bats){
   const armW = deriv(armAng,times).map(r=>Math.abs(r)*180/Math.PI);
 
   // hand linear speed (m/s) — max of both wrists
-  const handPos=F.map(f=>{ const a=v(f.wlm,L.Lwr),b=v(f.wlm,L.Rwr); return {a,b}; });
-  const handSp=new Array(F.length).fill(0);
-  for(let i=1;i<F.length-1;i++){
+  const handSp=new Array(N).fill(0);
+  for(let i=1;i<N-1;i++){
     const dt=times[i+1]-times[i-1]; if(dt<=0)continue;
-    const sa=dist3(handPos[i+1].a,handPos[i-1].a)/dt;
-    const sb=dist3(handPos[i+1].b,handPos[i-1].b)/dt;
+    const sa=dist3(v(F[i+1].wlm,L.Lwr),v(F[i-1].wlm,L.Lwr))/dt;
+    const sb=dist3(v(F[i+1].wlm,L.Rwr),v(F[i-1].wlm,L.Rwr))/dt;
     handSp[i]=Math.max(sa,sb);
   }
   const handSpS=smooth(handSp);
 
+  // lead-arm extension (elbow angle; ~180° = fully extended through the ball)
+  const armExt = F.map(f=>angleAt(v(f.wlm,lead.sho), v(f.wlm,lead.elb), v(f.wlm,lead.wr)));
+
   // peaks
   const peak=(a)=>{let mi=0,mv=-1;for(let i=0;i<a.length;i++)if(a[i]>mv){mv=a[i];mi=i;}return{i:mi,v:mv,t:times[mi]};};
   const pHip=peak(hipW), pSho=peak(shoW), pArm=peak(armW), pHand=peak(handSpS);
-  const contactIdx=pHand.i;            // estimated contact = peak hand speed
+
+  // swing initiation: first frame pelvis speed crosses 25% of its peak (at/before the pelvis peak)
+  let initIdx=0; const hipThresh=pHip.v*0.25;
+  for(let i=0;i<=pHip.i;i++){ if(hipW[i]>hipThresh){ initIdx=Math.max(0,i-1); break; } }
+
+  // contact estimate: refine peak hand speed toward maximum lead-arm extension nearby,
+  // which lands on the strike rather than a follow-through speed spike. Manual override wins.
+  let contactIdx;
+  if(Number.isInteger(forcedContact) && forcedContact>=0 && forcedContact<N){
+    contactIdx=forcedContact;
+  }else{
+    const extMax=Math.max(...armExt,1e-6), hsMax=Math.max(...handSpS,1e-6);
+    const base=pHand.i; let best=base, bestV=-1;
+    for(let i=Math.max(initIdx,base-3); i<=Math.min(N-1,base+3); i++){
+      const blend=(handSpS[i]/hsMax)*0.7 + (armExt[i]/extMax)*0.3;
+      if(blend>bestV){ bestV=blend; best=i; }
+    }
+    contactIdx=best;
+  }
   const contactT=times[contactIdx];
 
-  // hip-shoulder separation (deg) through swing; peak near launch
+  // hip-shoulder separation (deg); peak before contact
   const sep = shoAng.map((s,i)=>(s-hipAng[i])*180/Math.PI);
   let peakSep=0, sepIdx=0;
   for(let i=0;i<=contactIdx;i++){ if(Math.abs(sep[i])>Math.abs(peakSep)){peakSep=sep[i];sepIdx=i;} }
 
   // head stability — nose path length from initiation→contact (cm)
-  let initIdx=0;
-  const hipThresh=pHip.v*0.2;
-  for(let i=0;i<contactIdx;i++){ if(hipW[i]>hipThresh){initIdx=i;break;} }
   let headPath=0;
   for(let i=initIdx+1;i<=contactIdx;i++){ headPath+=dist3(v(F[i].wlm,L.nose),v(F[i-1].wlm,L.nose)); }
-  headPath*=100; // cm
+  headPath*=100;
 
-  // front-leg block — lead knee angle: load vs contact (extension into contact = good)
+  // front-leg block — straightening of the lead knee from its DEEPEST flexion into contact
   const kneeAngle=i=>angleAt(v(F[i].wlm,lead.hip), v(F[i].wlm,lead.knee), v(F[i].wlm,lead.ank));
-  const kneeLoad=kneeAngle(initIdx), kneeContact=kneeAngle(contactIdx);
-  const kneeExt=kneeContact-kneeLoad; // positive = straightening (blocking)
+  let kneeMinIdx=initIdx, kneeMin=Infinity;
+  for(let i=initIdx;i<=contactIdx;i++){ const a=kneeAngle(i); if(a<kneeMin){kneeMin=a;kneeMinIdx=i;} }
+  const kneeContact=kneeAngle(contactIdx);
+  const blockExt=kneeContact-kneeMin;                                   // degrees of post-up
+  const hipRise=(v(F[kneeMinIdx].wlm,lead.hip).y - v(F[contactIdx].wlm,lead.hip).y)*100; // cm (y is down)
 
   const timeToContactMs=(contactT-times[initIdx])*1000;
+
+  // ---- tracking quality ----
+  const visOf=(f,idx)=>{ const w=f.wlm&&f.wlm[idx], l=f.lm&&f.lm[idx];
+    if(w&&typeof w.visibility==='number') return w.visibility;
+    if(l&&typeof l.visibility==='number') return l.visibility;
+    return null; };
+  let visSum=0, visN=0;
+  const keyJ=[L.Lsho,L.Rsho,L.Lhip,L.Rhip,lead.wr,lead.knee,lead.ank];
+  F.forEach(f=>keyJ.forEach(idx=>{ const x=visOf(f,idx); if(x!=null){ visSum+=x; visN++; } }));
+  const conf = visN ? visSum/visN : null;
+  const swingFrames = contactIdx-initIdx+1;
+  const quality={ conf, frames:N, swingFrames, coarse: swingFrames<6 };
 
   // ---- scoring ----
   const order=[{n:'pelvis',t:pHip.t},{n:'torso',t:pSho.t},{n:'arm',t:pArm.t},{n:'hand',t:pHand.t}];
@@ -658,7 +742,6 @@ function analyze(allFrames, bats){
   let inversions=0; for(let i=0;i<4;i++) if(sorted[i]!==ideal[i]) inversions++;
   const seqOrderScore = Math.max(0, 100 - inversions*22);
 
-  // lag: average gap between consecutive peaks (want staggered, not simultaneous)
   const peakTimes=[pHip.t,pSho.t,pArm.t,pHand.t].sort((a,b)=>a-b);
   const gaps=[]; for(let i=1;i<4;i++) gaps.push((peakTimes[i]-peakTimes[i-1])*1000);
   const avgGap=gaps.reduce((a,b)=>a+b,0)/gaps.length;
@@ -667,8 +750,8 @@ function analyze(allFrames, bats){
   const sepScore = rangeScore(Math.abs(peakSep), 30, 55, 10, 80);
   const pelvisSpeedScore = rangeScore(pHip.v, 450, 900, 150, 1300);
   const handSpeedScore = rangeScore(pHand.v, 5, 11, 2.5, 16);
-  const headScore = invRangeScore(headPath, 4, 12); // <4cm great, >12cm poor
-  const blockScore = rangeScore(kneeExt, 5, 45, -15, 70);
+  const headScore = invRangeScore(headPath, 4, 12);
+  const blockScore = rangeScore(blockExt, 15, 55, -10, 80);
 
   const dims=[
     {key:'seq',  name:'Kinematic sequence order', note:'Peaks fired '+sorted.join(' → '),
@@ -683,8 +766,8 @@ function analyze(allFrames, bats){
       val:pHand.v.toFixed(1)+' m/s', score:handSpeedScore, color:'amber'},
     {key:'head', name:'Head stability', note:'Head travel, launch → contact',
       val:headPath.toFixed(1)+' cm', score:headScore, color:'grass'},
-    {key:'block',name:'Front-leg block (proxy)', note:'Lead-knee extension into contact',
-      val:(kneeExt>=0?'+':'')+kneeExt.toFixed(0)+'°', score:blockScore, color:'grass'},
+    {key:'block',name:'Front-leg block (proxy)', note:'Lead-knee straightening, load → contact',
+      val:(blockExt>=0?'+':'')+blockExt.toFixed(0)+'°', score:blockScore, color:'grass'},
   ];
 
   const weights={seq:1.6,lag:1.0,sep:1.4,pelv:1.0,hand:1.2,head:1.0,block:1.1};
@@ -694,8 +777,8 @@ function analyze(allFrames, bats){
   return {
     F, times, dims, composite,
     series:{hipW,shoW,armW,handSp:handSpS, times},
-    peaks:{pHip,pSho,pArm,pHand}, contactIdx, contactT, initIdx,
-    extras:{timeToContactMs, sorted, inversions, peakSep, headPath, kneeContact, kneeExt}
+    peaks:{pHip,pSho,pArm,pHand}, contactIdx, contactT, initIdx, quality,
+    extras:{timeToContactMs, sorted, inversions, peakSep, headPath, kneeContact, blockExt, hipRise, kneeMinIdx}
   };
 }
 
@@ -743,13 +826,38 @@ function renderResults(a){
     `<b>SEQUENCE</b> ${a.extras.sorted.join(' → ')} · `+
     `<b>TIME TO CONTACT</b> ${Math.round(a.extras.timeToContactMs)} ms · `+
     `<b>PEAK SEPARATION</b> ${Math.abs(a.extras.peakSep).toFixed(0)}° · `+
-    `<b>HEAD TRAVEL</b> ${a.extras.headPath.toFixed(1)} cm · `+
+    `<b>FRONT-SIDE RISE</b> ${a.extras.hipRise.toFixed(1)} cm · `+
     `<b>FRAMES TRACKED</b> ${a.F.length}`;
+
+  renderQuality(a);
+  $('#contactLbl').innerHTML = `Est. contact: <b>frame ${a.contactIdx+1}</b> (${Math.round(a.contactT*1000)} ms)`;
 
   drawKChart(a);
   setup3D(a);
   renderDrills(a, ruleDrills(a));
   updateSaveBtn();
+}
+
+function renderQuality(a){
+  const q=a.quality, band=$('#qband'); if(!band) return;
+  const msgs=[]; let level='good';
+  if(q.conf!=null){
+    const pct=Math.round(q.conf*100);
+    const cl = q.conf>=0.7?'good':q.conf>=0.5?'warn':'bad';
+    if(cl==='warn'&&level==='good') level='warn';
+    if(cl==='bad') level='bad';
+    msgs.push(`<span class="qchip">TRACKING <b>${pct}%</b></span>`);
+    if(q.conf<0.5) msgs.push('Low landmark visibility — frame the full body side-on in even light for trustworthy numbers.');
+    else if(q.conf<0.7) msgs.push('Some joints were hard to see; treat the finer timing numbers as approximate.');
+  }else{
+    msgs.push('<span class="qchip">TRACKING <b>n/a</b></span><span>replayed swing</span>');
+  }
+  if(q.coarse){ level= level==='bad'?'bad':'warn';
+    msgs.push(`<span class="qchip">⚠ <b>${q.swingFrames}</b> frames across the swing</span>`);
+    msgs.push('Too few frames to trust sequence timing — film in slow-motion (120–240 fps) for sharp kinematics.');
+  }
+  band.className='qband show '+level;
+  band.innerHTML=msgs.join(' ');
 }
 
 /* ---- kinematic sequence chart ---- */
@@ -942,6 +1050,7 @@ $('#aiBtn').addEventListener('click', async ()=>{
 
 /* ===================== CLOUD: roster · save · history · settings ===================== */
 const syncDot=$('#syncDot'), syncText=$('#syncText'), hitterSel=$('#hitterSel');
+let histSwings=[];
 function setSync(state,text){
   if(!syncDot)return;
   syncDot.className='dot'+(state==='on'?' live':state==='work'?' work':state==='off'?' err':'');
@@ -1017,9 +1126,11 @@ async function saveSwing(){
   const btn=$('#saveSwingBtn'); const old=btn.textContent; btn.disabled=true; btn.textContent='Saving…';
   try{
     const rec={
-      hitterId:currentHitterId, bats, composite:analysis.composite,
+      v:2, hitterId:currentHitterId, bats, composite:analysis.composite,
       dims:analysis.dims.map(d=>({name:d.name,val:d.val,score:d.score})),
       sequence:analysis.extras.sorted.join(' → '),
+      quality:{ conf:analysis.quality.conf!=null?+analysis.quality.conf.toFixed(2):null,
+                swingFrames:analysis.quality.swingFrames, coarse:analysis.quality.coarse },
       extras:{ timeToContactMs:Math.round(analysis.extras.timeToContactMs),
                peakSep:+Math.abs(analysis.extras.peakSep).toFixed(0),
                headPath:+analysis.extras.headPath.toFixed(1) },
@@ -1041,6 +1152,7 @@ async function loadHistory(){
     // single-field orderBy → no composite index needed; filter by hitter client-side
     const snap=await getDocs(query(collection(db,'users',uid,'swings'),orderBy('createdAt','desc'),limit(150)));
     const swings=snap.docs.map(d=>({id:d.id,...d.data()})).filter(s=>s.hitterId===currentHitterId);
+    histSwings=swings;
     card.classList.add('show');
     if(!swings.length){ list.innerHTML='<div class="empty">No saved swings yet. Analyze a clip, then hit <b>Save</b>.</div>'; drawTrend([]); return; }
     drawTrend([...swings].reverse());
@@ -1090,12 +1202,117 @@ function drawTrend(swings){
     ctx.beginPath();ctx.arc(x,y,3.2*devicePixelRatio,0,7);ctx.fill(); });
 }
 
+/* ---- manual contact override ---- */
+function setContactToCurrent(){
+  if(!lastRawFrames||!analysis) return;
+  const keep=curIdx;
+  analysis=analyze(lastRawFrames, bats, keep);
+  renderResults(analysis);
+  setFrame(keep);
+}
+
+/* ===================== COMPARE (before / after) ===================== */
+let cmpRAF=null, cmpRenderer=null, cmpScene=null, cmpCam=null, cmpControls=null;
+let cmpSkA=null, cmpSkB=null, cmpA_ref=null, cmpB_ref=null;
+
+function buildSkeleton(scene,color,opacity){
+  const sp=JOINTS.map(()=>{ const m=new THREE.Mesh(new THREE.SphereGeometry(0.02,12,12),
+    new THREE.MeshStandardMaterial({color,transparent:opacity<1,opacity})); scene.add(m); return m; });
+  const ln=BONES.map(()=>{ const g=new THREE.BufferGeometry();
+    g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6),3));
+    const l=new THREE.Line(g,new THREE.LineBasicMaterial({color,transparent:opacity<1,opacity})); scene.add(l); return l; });
+  return {sp,ln};
+}
+function poseSkeleton(sk,wlm){
+  const pos=idx=>{ const p=wlm[idx]; return new THREE.Vector3(p.x,-p.y,-p.z); };
+  JOINTS.forEach((idx,k)=>sk.sp[k].position.copy(pos(idx)));
+  BONES.forEach((b,k)=>{ const p1=pos(b[0]),p2=pos(b[1]); const arr=sk.ln[k].geometry.attributes.position.array;
+    arr[0]=p1.x;arr[1]=p1.y;arr[2]=p1.z;arr[3]=p2.x;arr[4]=p2.y;arr[5]=p2.z;
+    sk.ln[k].geometry.attributes.position.needsUpdate=true; });
+}
+
+function openCompare(){
+  if(histSwings.length<2){ cloudBanner('Save at least two swings for this hitter to compare them.'); return; }
+  const opts=histSwings.map((s,i)=>{
+    const dt=s.createdAt&&s.createdAt.toDate?s.createdAt.toDate():null;
+    const lbl=(dt?dt.toLocaleDateString(undefined,{month:'short',day:'numeric'}):('#'+(i+1)))+' · '+s.composite;
+    return `<option value="${s.id}">${lbl}</option>`;
+  }).join('');
+  $('#cmpA').innerHTML=opts; $('#cmpB').innerHTML=opts;
+  $('#cmpA').value=histSwings[histSwings.length-1].id;  // oldest
+  $('#cmpB').value=histSwings[0].id;                    // newest
+  $('#cmpCard').classList.add('show');
+  rebuildCompare();
+  $('#cmpCard').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function rebuildCompare(){
+  const a=histSwings.find(s=>s.id===$('#cmpA').value);
+  const b=histSwings.find(s=>s.id===$('#cmpB').value);
+  if(!a||!b||!a.replay||!b.replay){ $('#cmpDelta').innerHTML='<div class="empty">One of these swings has no replay data.</div>'; return; }
+  const A=analyze(unpackFrames(a.replay.frames), a.bats||'R');
+  const B=analyze(unpackFrames(b.replay.frames), b.bats||'R');
+  $('#cmpAname').textContent='A · '+a.composite;
+  $('#cmpBname').textContent='B · '+b.composite;
+  setupCmpScene(A,B);
+  renderCmpDelta(A,B);
+}
+function setupCmpScene(A,B){
+  const host=$('#cmpThree'); host.innerHTML='';
+  const w=host.clientWidth||600, h=host.clientHeight||380;
+  cmpScene=new THREE.Scene();
+  cmpCam=new THREE.PerspectiveCamera(45,w/h,0.01,100); cmpCam.position.set(0,0.2,3.4);
+  cmpRenderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+  cmpRenderer.setSize(w,h); cmpRenderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  host.appendChild(cmpRenderer.domElement);
+  cmpControls=new OrbitControls(cmpCam,cmpRenderer.domElement); cmpControls.enableDamping=true;
+  cmpScene.add(new THREE.AmbientLight(0xffffff,0.9));
+  const dl=new THREE.DirectionalLight(0xffffff,0.5); dl.position.set(1,2,2); cmpScene.add(dl);
+  const grid=new THREE.GridHelper(2.4,12,0x2a3138,0x222a32); grid.position.y=-1.0;
+  grid.material.opacity=0.2; grid.material.transparent=true; cmpScene.add(grid);
+  cmpSkA=buildSkeleton(cmpScene,0xE07A3E,1.0);
+  cmpSkB=buildSkeleton(cmpScene,0x5BA9C8,0.85);
+  cmpA_ref=A; cmpB_ref=B;
+  const lo=Math.max(-A.contactIdx,-B.contactIdx);
+  const hi=Math.min(A.F.length-1-A.contactIdx, B.F.length-1-B.contactIdx);
+  const sc=$('#cmpScrub'); sc.min=lo; sc.max=hi; sc.value=0;
+  sc.oninput=()=>cmpPhase(+sc.value);
+  cmpPhase(0);
+  const ro=new ResizeObserver(()=>{const W=host.clientWidth,H=host.clientHeight;if(W&&H&&cmpRenderer){cmpRenderer.setSize(W,H);cmpCam.aspect=W/H;cmpCam.updateProjectionMatrix();}});
+  ro.observe(host);
+  if(cmpRAF) cancelAnimationFrame(cmpRAF);
+  (function loop(){ if(!cmpControls)return; cmpControls.update(); cmpRenderer.render(cmpScene,cmpCam); cmpRAF=requestAnimationFrame(loop); })();
+}
+function cmpPhase(p){
+  const A=cmpA_ref,B=cmpB_ref; if(!A||!B)return;
+  const ia=Math.max(0,Math.min(A.F.length-1,A.contactIdx+p));
+  const ib=Math.max(0,Math.min(B.F.length-1,B.contactIdx+p));
+  poseSkeleton(cmpSkA,A.F[ia].wlm); poseSkeleton(cmpSkB,B.F[ib].wlm);
+  $('#cmpPhaseLbl').textContent = p===0?'◉ contact' : (p>0?`+${p} after contact`:`${p} before contact`);
+}
+function renderCmpDelta(A,B){
+  const rows=[`<div class="drow head"><span>Dimension</span><span class="dv">A</span><span class="dv">B</span><span class="dd">Δ</span></div>`];
+  rows.push(deltaRow('Swing Index', A.composite, B.composite, B.composite-A.composite));
+  A.dims.forEach((d,i)=>{ const e=B.dims[i]; rows.push(deltaRow(d.name, d.val, e.val, e.score-d.score)); });
+  $('#cmpDelta').innerHTML=rows.join('');
+}
+function deltaRow(name, av, bv, d){
+  const col=d>0?'var(--grass)':d<0?'var(--stitch)':'var(--muted)';
+  const sign=d>0?'+':'';
+  return `<div class="drow"><span class="dn">${name}</span><span class="dv">${av}</span><span class="dv">${bv}</span><span class="dd" style="color:${col}">${sign}${d}</span></div>`;
+}
+function closeCompare(){ $('#cmpCard').classList.remove('show'); if(cmpRAF){cancelAnimationFrame(cmpRAF);cmpRAF=null;} cmpControls=null; }
+
 hitterSel.addEventListener('change',onHitterChange);
 $('#addHitterBtn').addEventListener('click',addHitter);
 $('#histBtn').addEventListener('click',()=>{ const c=$('#histCard'); c.classList.toggle('show'); if(c.classList.contains('show')) loadHistory(); });
 $('#aiSetBtn').addEventListener('click',()=>$('#aiSetup').classList.toggle('show'));
 $('#saveWorkerBtn').addEventListener('click',saveWorkerUrl);
 $('#saveSwingBtn').addEventListener('click',saveSwing);
+$('#setContactBtn').addEventListener('click',setContactToCurrent);
+$('#compareBtn').addEventListener('click',openCompare);
+$('#cmpClose').addEventListener('click',closeCompare);
+$('#cmpA').addEventListener('change',rebuildCompare);
+$('#cmpB').addEventListener('change',rebuildCompare);
 
 setSync('work','Connecting…');
 initCloud();
